@@ -1,0 +1,96 @@
+apiVersion: app.aispec.org/v1alpha1
+kind: AIApp
+metadata:
+  name: telco-bot
+spec:
+  assistants:
+    - name: Default Assistant
+      provider: togetherai
+      model: mistralai/Mistral-7B-Instruct-v0.2
+      type: text
+      system_prompt: |
+        1. Present call information in a clear, structured format
+        2. Include relevant details like participants, timestamps, and call subjects
+        3. If multiple calls are found, summarize them chronologically
+        4. When showing dialog, present it in a conversational format
+        5. Always mention if no calls are found matching the query criteria
+      apis:
+        - name: VCON Search API
+          description: Search phone call records by participant name or phone number
+          url: "http://host.docker.internal:8005"
+          schema: |
+            openapi: 3.0.0
+            info:
+              title: VCON Search API
+              version: 1.0.0
+            paths:
+              /vcon:
+                get:
+                  summary: Get all VCONs
+                  operationId: getAllVcons
+                  responses:
+                    '200':
+                      description: List of all VCONs
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/VCON'
+              /vcons/search:
+                get:
+                  summary: Search VCONs by participant
+                  operationId: searchVcons
+                  parameters:
+                    - name: name
+                      in: query
+                      schema:
+                        type: string
+                      description: Search by participant name
+                    - name: tel
+                      in: query
+                      schema:
+                        type: string
+                      description: Search by phone number
+                  responses:
+                    '200':
+                      description: List of matching VCONs
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/VCON'
+            components:
+              schemas:
+                VCON:
+                  type: object
+                  properties:
+                    uuid:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                    subject:
+                      type: string
+                    parties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          tel:
+                            type: string
+                    dialog:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          timestamp:
+                            type: string
+                            format: date-time
+                          speaker:
+                            type: string
+                          text:
+                            type: string
